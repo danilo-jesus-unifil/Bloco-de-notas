@@ -1,30 +1,39 @@
 # Bloco de notas
 
-Um bloco de notas simples, rápido e predominantemente escuro, escrito em Rust com `egui/eframe`. O projeto foi desenhado para manter a experiência direta de um editor de texto básico: abrir um arquivo `.txt`, digitar, localizar, salvar e fechar sem a complexidade de um editor de programação.
+Um bloco de notas simples, rápido e predominantemente escuro, escrito em Rust com `egui/eframe`. O projeto foi desenhado para manter a experiência direta de um editor de texto básico: abrir um arquivo de texto, digitar, localizar, salvar e fechar sem a complexidade de um editor de programação.
 
 ## Escopo entregue
 
-A versão `0.1.0` inclui uma janela desktop redimensionável, tema escuro, edição de texto Unicode, quebra automática de linha, ajuste limitado de fonte, menus familiares, atalhos de teclado, novo, abrir, salvar, salvar como, confirmação para alterações não salvas, desfazer, refazer, copiar, recortar, colar, selecionar tudo, localizar, substituir e substituição em massa.
+A versão `0.2.0` acrescenta uma experiência visual mais próxima do Bloco de Notas do Windows 11 sem abandonar a compatibilidade com Windows 10. A janela possui cabeçalho compacto com ícone, abas locais, botão de nova aba, menus familiares, painel de configurações mínimo, status bar detalhada e drag and drop de arquivos de texto.
 
-O modelo de documento é separado da interface, mantém uma única fonte de verdade para o conteúdo e limita o histórico a 128 estados. Arquivos são lidos como UTF-8, com suporte a BOM UTF-8; finais de linha `CRLF` e `CR` são normalizados para `LF` de maneira previsível. A gravação usa um arquivo temporário no mesmo diretório, `flush`, `sync_all` e substituição controlada para reduzir o risco de deixar o arquivo original parcialmente gravado.
+O aplicativo inclui edição Unicode, quebra automática de linha, zoom por tamanho da fonte, novo documento, abrir, salvar, salvar como, confirmação para alterações não salvas, desfazer, refazer, copiar, recortar, colar, selecionar tudo, localizar, localizar anterior/próximo, substituir e substituição em massa. Os atalhos principais incluem `Ctrl+N`, `Ctrl+O`, `Ctrl+S`, `Ctrl+Shift+S`, `Ctrl+W`, `Ctrl+Z`, `Ctrl+Y`, `Ctrl+X`, `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+F`, `Ctrl+H`, `Ctrl++`, `Ctrl+-` e `Ctrl+0`.
 
-A integração de recursos do Windows fica isolada no `build.rs` e nos assets. O manifesto declara DPI awareness, incluindo `PerMonitorV2`, e o build Windows incorpora o ícone multi-resolução por meio do recurso nativo da plataforma.
+Cada aba mantém seu documento, caminho, estado de alteração, histórico de edição, cursor persistido pelo identificador do editor e preferências de visualização. O comportamento de abertura pode ser configurado para usar uma nova aba. Fechar uma aba ou sair verifica alterações não salvas sem descartar conteúdo silenciosamente.
+
+## Arquivos e encoding
+
+Os formatos de texto priorizados são `.txt`, `.md`, `.log`, `.csv`, `.ini` e `.json`; o aplicativo não interpreta esses formatos, apenas edita texto. Arquivos são lidos como UTF-8, com suporte a BOM UTF-8 e mensagens controladas para bytes inválidos. Finais de linha `CRLF`, `LF` e `CR` são detectados, normalizados internamente e serializados novamente de forma previsível. O salvamento usa arquivo temporário no mesmo diretório, `flush`, `sync_all` e substituição controlada para reduzir o risco de deixar o arquivo original parcialmente gravado.
+
+## Configurações persistentes
+
+O tema escuro é o padrão. O painel de configurações persiste somente preferências mínimas por meio do armazenamento do eframe em local apropriado ao sistema: tamanho da fonte, quebra automática, visibilidade da barra de status, comportamento de abertura e modo de tema. As opções Claro e Seguir o sistema são apresentadas como futuras e permanecem desabilitadas nesta versão, sem simular suporte incompleto. O tamanho e a posição da janela também podem ser persistidos pelo eframe.
 
 ## Estrutura
 
 | Caminho | Responsabilidade |
 |---|---|
-| `src/main.rs` | Inicialização da janela e entrada do aplicativo |
-| `src/app/` | Estado geral, comandos, diálogos e ciclo de vida |
-| `src/document/` | Conteúdo, caminho, dirty state e Undo/Redo |
+| `src/main.rs` | Inicialização da janela, DPI, persistência de geometria e entrada |
+| `src/app/` | Estado geral, abas, comandos, configurações, drag and drop e ciclo de vida |
+| `src/document/` | Conteúdo, caminho, dirty state, finais de linha e Undo/Redo |
 | `src/editor/` | Busca e substituição determinísticas |
-| `src/file_io/` | Leitura UTF-8 e gravação temporária controlada |
-| `src/ui/` | Menus, editor, painel de busca e barra de status |
+| `src/file_io/` | Leitura UTF-8, detecção de finais de linha e gravação temporária |
+| `src/ui/` | Cabeçalho, abas, menus, editor, configurações, busca e status bar |
 | `src/theme/` | Paleta escura semântica |
 | `src/error/` | Erros técnicos e mensagens compreensíveis |
 | `src/commands/` | Vocabulário central de ações |
 | `assets/` | Manifesto DPI e ícone Windows |
 | `docs/DEVELOPMENT_PLAYBOOK.md` | Guia interno de Git e de projeto |
+| `docs/COMPLEMENT_PLAN.md` | Análise e limites do complemento |
 
 ## Desenvolvimento
 
@@ -44,11 +53,25 @@ Para executar localmente:
 cargo run
 ```
 
-Para criar um build Windows com os recursos nativos, use um ambiente Windows com o toolchain MSVC ou GNU escolhido para a distribuição. O `build.rs` usa `winres` somente em builds Windows; no Linux, os testes de lógica e o build de desenvolvimento continuam independentes dessa etapa.
+Para gerar o executável Windows x86-64 no ambiente GNU:
+
+```bash
+rustup target add x86_64-pc-windows-gnu
+CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-gcc \
+  cargo build --release --target x86_64-pc-windows-gnu
+```
+
+O executável cross-compiled fica em `target/x86_64-pc-windows-gnu/release/bloco-de-notas.exe`. Em um ambiente Windows com o toolchain MSVC, o comando usual é `cargo build --release`, produzindo o arquivo em `target/release/bloco-de-notas.exe`.
+
+O `build.rs` usa `winres` somente em builds Windows para incorporar o manifesto DPI-aware e o ícone multi-resolução. A aplicação não depende de arquivos presentes na máquina de desenvolvimento para iniciar.
+
+## Distribuição
+
+O diretório `dist/` é reservado para artefatos gerados e não é commitado. Um pacote Windows contém o executável e um README curto de distribuição. O release oficial acompanha um arquivo de checksum SHA-256.
 
 ## Limitações conhecidas da validação
 
-O ambiente de desenvolvimento desta entrega é Linux. Portanto, os testes automatizados e o build local validam a lógica Rust e a integração de desenvolvimento da GUI, mas não substituem a execução manual em Windows 10. Antes de distribuir um executável, valide o arquivo final em Windows 10 com escalas de 100%, 125%, 150%, 175% e 200%, incluindo abertura, salvamento, clipboard, menus, fechamento com alterações e movimentação entre monitores com DPI diferente.
+O ambiente de desenvolvimento desta entrega é Linux. Os testes automatizados, a análise estática e o cross-build PE validam a lógica Rust, o formato do executável Windows e a integração de recursos, mas não substituem a execução manual em Windows 10/11. Antes de distribuir amplamente, valide o arquivo final em Windows 10 e 11 com escalas de 100%, 125%, 150%, 175% e 200%, incluindo abertura, salvamento, clipboard, drag and drop, abas, menus, fechamento com alterações e movimento entre monitores com DPI diferente.
 
 ## Licença
 

@@ -12,9 +12,12 @@ mod ui;
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
-            .with_inner_size([960.0, 640.0])
-            .with_min_inner_size([520.0, 320.0])
+            .with_inner_size([1200.0, 750.0])
+            .with_min_inner_size([640.0, 400.0])
+            .with_drag_and_drop(true)
+            .with_app_id("bloco-de-notas")
             .with_title("Bloco de notas"),
+        persist_window: true,
         ..Default::default()
     };
 

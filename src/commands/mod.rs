@@ -4,7 +4,8 @@ pub enum AppCommand {
     Open,
     Save,
     SaveAs,
-    Close,
+    CloseTab,
+    Quit,
     Undo,
     Redo,
     Cut,
@@ -13,4 +14,8 @@ pub enum AppCommand {
     SelectAll,
     Find,
     Replace,
+    ZoomIn,
+    ZoomOut,
+    ResetZoom,
+    ToggleSettings,
 }

@@ -2,6 +2,23 @@ use std::path::{Path, PathBuf};
 
 const MAX_HISTORY_ENTRIES: usize = 128;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LineEnding {
+    Lf,
+    CrLf,
+    Cr,
+}
+
+impl LineEnding {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Lf => "Unix (LF)",
+            Self::CrLf => "Windows (CRLF)",
+            Self::Cr => "Classic (CR)",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 struct Snapshot {
     text: String,
@@ -13,6 +30,7 @@ pub struct Document {
     path: Option<PathBuf>,
     dirty: bool,
     utf8_bom: bool,
+    line_ending: LineEnding,
     undo: Vec<Snapshot>,
     redo: Vec<Snapshot>,
     editor_baseline: String,
@@ -26,11 +44,17 @@ impl Default for Document {
 
 impl Document {
     pub fn new() -> Self {
+        let line_ending = if cfg!(windows) {
+            LineEnding::CrLf
+        } else {
+            LineEnding::Lf
+        };
         Self {
             text: String::new(),
             path: None,
             dirty: false,
             utf8_bom: false,
+            line_ending,
             undo: Vec::new(),
             redo: Vec::new(),
             editor_baseline: String::new(),
@@ -65,6 +89,10 @@ impl Document {
         self.utf8_bom
     }
 
+    pub fn line_ending(&self) -> LineEnding {
+        self.line_ending
+    }
+
     pub fn sync_editor_change(&mut self) -> bool {
         if self.editor_baseline == self.text {
             return false;
@@ -80,22 +108,35 @@ impl Document {
         true
     }
 
-    pub fn set_loaded_state(&mut self, path: PathBuf, text: String, utf8_bom: bool) {
+    pub fn set_loaded_state(
+        &mut self,
+        path: PathBuf,
+        text: String,
+        utf8_bom: bool,
+        line_ending: LineEnding,
+    ) {
         self.text = text;
         self.editor_baseline = self.text.clone();
         self.path = Some(path);
         self.dirty = false;
         self.utf8_bom = utf8_bom;
+        self.line_ending = line_ending;
         self.undo.clear();
         self.redo.clear();
     }
 
     pub fn set_new_state(&mut self) {
+        let line_ending = if cfg!(windows) {
+            LineEnding::CrLf
+        } else {
+            LineEnding::Lf
+        };
         self.text.clear();
         self.editor_baseline.clear();
         self.path = None;
         self.dirty = false;
         self.utf8_bom = false;
+        self.line_ending = line_ending;
         self.undo.clear();
         self.redo.clear();
     }
@@ -155,7 +196,7 @@ impl Document {
 
 #[cfg(test)]
 mod tests {
-    use super::Document;
+    use super::{Document, LineEnding};
 
     #[test]
     fn editing_marks_document_dirty_and_undo_restores_text() {
@@ -179,5 +220,11 @@ mod tests {
         assert!(!document.is_dirty());
         assert!(!document.can_undo());
         assert_eq!(document.file_name(), "arquivo.txt");
+    }
+
+    #[test]
+    fn line_ending_labels_are_stable() {
+        assert_eq!(LineEnding::CrLf.label(), "Windows (CRLF)");
+        assert_eq!(LineEnding::Lf.label(), "Unix (LF)");
     }
 }
