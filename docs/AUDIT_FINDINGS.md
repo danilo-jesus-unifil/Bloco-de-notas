@@ -139,3 +139,11 @@ A nova revisão completa revalidou o baseline v0.2.4 e encontrou uma inconsistê
 Após a correção documental, a validação passou novamente com 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, builds release Linux e Windows PE32+ x86-64, scans estáticos, `git diff --check`, smoke test headless e interação headless com identificação da janela e atalhos básicos. Não foram encontrados novos problemas de código, segurança, desempenho, interface ou compatibilidade.
 
 Como o achado foi exclusivamente documental e não alterou o comportamento do aplicativo, não foi criado um novo release. O v0.2.4 continua sendo a versão funcional correta; esta rodada acrescenta somente a atualização do CHANGELOG e o registro desta auditoria.
+
+## Auditoria do pasted_content_10.txt
+
+A nova revisão revalidou os requisitos, os fluxos funcionais, a arquitetura, a segurança, o desempenho, a interface, as dependências, o I/O, o fechamento e a compatibilidade do v0.2.4. Ela encontrou uma pequena inconsistência na correção documental anterior: uma linha sobre o fechamento centralizado, pertencente ao v0.2.4, havia sido repetida indevidamente na seção do v0.2.3 do `CHANGELOG.md`. A linha foi removida, mantendo cada release alinhado ao commit que realmente o introduziu.
+
+Depois dessa correção, passaram novamente 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, builds release Linux e Windows PE32+ x86-64, scans estáticos, `git diff --check`, smoke test headless e interação headless com identificação da janela e atalhos básicos. Não foram encontrados novos problemas de código, segurança, desempenho, interface ou compatibilidade.
+
+O achado permaneceu exclusivamente documental e não alterou o comportamento do aplicativo. Não foi criado novo release; o v0.2.4 continua sendo a versão funcional correta.

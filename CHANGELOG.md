@@ -25,7 +25,6 @@ A auditoria completa refinou feedback, desempenho e robustez de I/O sem ampliar 
 - O botão `+` passou a criar diretamente uma nova aba; a opção de janela separada foi identificada como futura.
 - A contagem de caracteres passou a ser mantida pelo documento, com cache de linha e coluna por aba, cursor e geração de conteúdo.
 - A abertura de arquivos reduziu cópias evitáveis, revalidou o limite de 128 MB e rejeitou UTF-8 inválido com teste de regressão.
-- O fechamento deixou de depender de autorização temporária entre o comando e o evento da viewport.
 
 ## [0.2.2] — 2026-08-20
 
