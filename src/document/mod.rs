@@ -37,6 +37,8 @@ pub struct Document {
     editor_baseline: String,
     revision: u64,
     saved_revision: u64,
+    char_count: usize,
+    content_generation: u64,
 }
 
 impl Default for Document {
@@ -63,6 +65,8 @@ impl Document {
             editor_baseline: String::new(),
             revision: 0,
             saved_revision: 0,
+            char_count: 0,
+            content_generation: 0,
         }
     }
 
@@ -90,6 +94,14 @@ impl Document {
         self.dirty
     }
 
+    pub fn char_count(&self) -> usize {
+        self.char_count
+    }
+
+    pub fn content_generation(&self) -> u64 {
+        self.content_generation
+    }
+
     pub fn utf8_bom(&self) -> bool {
         self.utf8_bom
     }
@@ -110,6 +122,7 @@ impl Document {
         self.trim_history();
         self.editor_baseline = self.text.clone();
         self.revision = self.revision.wrapping_add(1);
+        self.refresh_metrics();
         self.dirty = self.revision != self.saved_revision;
         self.redo.clear();
         true
@@ -125,6 +138,7 @@ impl Document {
         self.text = text;
         self.editor_baseline = self.text.clone();
         self.revision = 0;
+        self.refresh_metrics();
         self.saved_revision = 0;
         self.path = Some(path);
         self.dirty = false;
@@ -143,6 +157,7 @@ impl Document {
         self.text.clear();
         self.editor_baseline.clear();
         self.revision = 0;
+        self.refresh_metrics();
         self.saved_revision = 0;
         self.path = None;
         self.dirty = false;
@@ -182,6 +197,7 @@ impl Document {
         self.text = snapshot.text;
         self.revision = snapshot.revision;
         self.editor_baseline = self.text.clone();
+        self.refresh_metrics();
         self.dirty = self.revision != self.saved_revision;
         true
     }
@@ -199,6 +215,7 @@ impl Document {
         self.text = snapshot.text;
         self.revision = snapshot.revision;
         self.editor_baseline = self.text.clone();
+        self.refresh_metrics();
         self.dirty = self.revision != self.saved_revision;
         true
     }
@@ -207,6 +224,11 @@ impl Document {
         if self.undo.len() > MAX_HISTORY_ENTRIES {
             self.undo.remove(0);
         }
+    }
+
+    fn refresh_metrics(&mut self) {
+        self.char_count = self.text.chars().count();
+        self.content_generation = self.content_generation.wrapping_add(1);
     }
 }
 
@@ -253,6 +275,18 @@ mod tests {
         assert!(!document.is_dirty());
         assert!(document.redo());
         assert!(document.is_dirty());
+    }
+
+    #[test]
+    fn metrics_follow_edit_undo_and_redo() {
+        let mut document = Document::new();
+        document.text_mut().push_str("🙂 texto");
+        assert!(document.sync_editor_change());
+        assert_eq!(document.char_count(), 7);
+        assert!(document.undo());
+        assert_eq!(document.char_count(), 0);
+        assert!(document.redo());
+        assert_eq!(document.char_count(), 7);
     }
 
     #[test]

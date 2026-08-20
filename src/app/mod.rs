@@ -21,6 +21,15 @@ const TEXT_EDIT_ID: &str = "main-document-editor";
 const SETTINGS_KEY: &str = "notepad-settings";
 const DEFAULT_FONT_SIZE: f32 = 16.0;
 
+#[derive(Clone, Copy)]
+struct CursorCache {
+    tab_id: u64,
+    content_generation: u64,
+    cursor_index: usize,
+    line: usize,
+    column: usize,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) enum ThemeMode {
     Dark,
@@ -80,6 +89,8 @@ pub struct NotepadApp {
     pub(crate) theme_mode: ThemeMode,
     pub(crate) status: Option<String>,
     next_tab_id: u64,
+    cursor_cache: Option<CursorCache>,
+    skip_next_close_confirmation: bool,
 }
 
 impl NotepadApp {
@@ -100,6 +111,8 @@ impl NotepadApp {
             theme_mode: settings.theme,
             status: Some("Pronto".to_owned()),
             next_tab_id: 1,
+            cursor_cache: None,
+            skip_next_close_confirmation: false,
         }
     }
 
@@ -205,7 +218,7 @@ impl NotepadApp {
         };
 
         if let Err(error) = result {
-            self.status = Some(error.user_message());
+            self.report_error(error);
         }
     }
 
@@ -300,7 +313,7 @@ impl NotepadApp {
             return;
         }
         if let Err(error) = self.open_path(path) {
-            self.status = Some(error.user_message());
+            self.report_error(error);
         }
     }
 
@@ -435,9 +448,21 @@ impl NotepadApp {
 
     fn close_application(&mut self, ctx: &egui::Context) -> Result<(), AppError> {
         if self.confirm_close_all() {
+            self.skip_next_close_confirmation = true;
             ctx.send_viewport_cmd(ViewportCommand::Close);
         }
         Ok(())
+    }
+
+    fn report_error(&mut self, error: AppError) {
+        let message = error.user_message();
+        self.status = Some(message.clone());
+        MessageDialog::new()
+            .set_level(MessageLevel::Error)
+            .set_title("Erro")
+            .set_description(message)
+            .set_buttons(MessageButtons::Ok)
+            .show();
     }
 
     fn confirm_discard(&mut self, action: &str) -> bool {
@@ -455,7 +480,13 @@ impl NotepadApp {
             .show();
 
         match result {
-            MessageDialogResult::Yes => self.save_document().unwrap_or(false),
+            MessageDialogResult::Yes => match self.save_document() {
+                Ok(saved) => saved,
+                Err(error) => {
+                    self.report_error(error);
+                    false
+                }
+            },
             MessageDialogResult::No => true,
             MessageDialogResult::Cancel
             | MessageDialogResult::Ok
@@ -493,18 +524,28 @@ impl NotepadApp {
         let Some(path) = self.tabs[index].document.path().map(PathBuf::from) else {
             let previous_tab = self.active_tab;
             self.active_tab = index;
-            let result = self.save_document().unwrap_or(false);
+            let result = match self.save_document() {
+                Ok(saved) => saved,
+                Err(error) => {
+                    self.report_error(error);
+                    false
+                }
+            };
             self.active_tab = previous_tab;
             return result;
         };
         let text = self.tabs[index].document.text().to_owned();
         let bom = self.tabs[index].document.utf8_bom();
         let line_ending = self.tabs[index].document.line_ending();
-        if file_io::save(&path, &text, bom, line_ending).is_ok() {
-            self.tabs[index].document.mark_saved(path, bom);
-            true
-        } else {
-            false
+        match file_io::save(&path, &text, bom, line_ending) {
+            Ok(()) => {
+                self.tabs[index].document.mark_saved(path, bom);
+                true
+            }
+            Err(error) => {
+                self.report_error(error);
+                false
+            }
         }
     }
 
@@ -573,9 +614,20 @@ impl NotepadApp {
         self.set_selection(ctx, 0, end);
     }
 
-    pub(crate) fn cursor_line_column(&self, ctx: &egui::Context) -> (usize, usize) {
-        let index = self.cursor_char_index(ctx);
-        let before = self.document().text().chars().take(index);
+    pub(crate) fn cursor_line_column(&mut self, ctx: &egui::Context) -> (usize, usize) {
+        let tab_id = self.tabs[self.active_tab].id;
+        let content_generation = self.document().content_generation();
+        let cursor_index = self.cursor_char_index(ctx);
+        if let Some(cache) = self.cursor_cache {
+            if cache.tab_id == tab_id
+                && cache.content_generation == content_generation
+                && cache.cursor_index == cursor_index
+            {
+                return (cache.line, cache.column);
+            }
+        }
+
+        let before = self.document().text().chars().take(cursor_index);
         let mut line = 1;
         let mut column = 1;
         for character in before {
@@ -586,6 +638,13 @@ impl NotepadApp {
                 column += 1;
             }
         }
+        self.cursor_cache = Some(CursorCache {
+            tab_id,
+            content_generation,
+            cursor_index,
+            line,
+            column,
+        });
         (line, column)
     }
 
@@ -612,7 +671,12 @@ impl NotepadApp {
     }
 
     pub(crate) fn accept_viewport_close(&mut self, ctx: &egui::Context) {
-        if ctx.input(|input| input.viewport().close_requested()) && !self.confirm_close_all() {
+        if !ctx.input(|input| input.viewport().close_requested()) {
+            return;
+        }
+        if self.skip_next_close_confirmation {
+            self.skip_next_close_confirmation = false;
+        } else if !self.confirm_close_all() {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
         }
     }

@@ -98,3 +98,20 @@ Uma revisão orientada a fluxos de usuário, além da bateria tradicional de com
 A validação posterior às correções passou com 11 testes unitários, 8 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, build release Linux, build release PE32+ x86-64 para Windows, scans estáticos, `git diff --check` e smoke test headless sob Xvfb. O `cargo audit` continua registrando apenas os avisos de manutenção transitiva já conhecidos para `paste 1.0.15` e `ttf-parser 0.25.1`.
 
 Permanecem riscos que não puderam ser reproduzidos integralmente neste ambiente. O limite de 128 MB protege o tamanho do arquivo, mas a leitura, normalização e o histórico podem gerar cópias temporárias adicionais; arquivos próximos do limite podem consumir centenas de megabytes durante a abertura ou salvamento. Também continuam sem cobertura automatizada completa os diálogos nativos, clipboard, drag and drop, múltiplos monitores/DPI, acessibilidade e execução visual no Windows 10/11 real. Esses pontos devem ser validados manualmente antes de uma distribuição ampla; não foram tratados como falhas confirmadas nesta rodada.
+
+## Auditoria completa pós-v0.2.2
+
+A revisão do prompt de auditoria e do projeto inteiro confirmou que o escopo anterior continua preservado: editor UTF-8, BOM, finais de linha, abas locais, drag and drop, status, zoom, busca/substituição Unicode, clipboard, undo/redo, persistência mínima, tema escuro, manifesto DPI e build Windows. Não foram encontrados botões funcionais sem ação, integrações simuladas, placeholders de produto ou dependências diretas sem uso. A opção “Nova janela” continua deliberadamente desabilitada e agora é identificada como futura, coerente com o plano de escopo.
+
+A auditoria funcional encontrou quatro pontos reais adicionais, todos corrigidos sem ampliar o produto:
+
+| Área | Constatação | Tratamento |
+|---|---|---|
+| Feedback de erro | O campo `status` era atualizado em vários caminhos, mas não era renderizado; falhas poderiam ficar invisíveis para quem não inspecionasse o título ou o estado interno. | O status agora aparece na barra inferior e falhas também abrem diálogo de erro contextualizado, preservando a mensagem no status. |
+| Barra de status em documentos grandes | A interface recalculava `text.chars().count()` e percorria todo o prefixo do documento para linha/coluna em cada frame. | A contagem de caracteres é mantida pelo documento e a posição de linha/coluna usa cache invalidado por aba, cursor e geração de conteúdo. |
+| Abertura próxima do limite | O carregamento podia copiar o buffer ao retirar BOM, normalizar mesmo quando não havia `CR` e aceitar uma alteração de tamanho entre `metadata` e `read`. | O buffer é reutilizado quando possível, a normalização retorna o texto original para arquivos LF e o tamanho lido é verificado novamente. |
+| Fechamento pelo menu/atalho | O fechamento iniciado pelo comando Sair podia ser confirmado pelo próprio comando e novamente pelo evento de fechamento da viewport. | Uma autorização de fechamento é consumida no evento seguinte, evitando confirmação duplicada; fechamentos externos continuam protegidos. |
+
+Foi adicionada cobertura de entrada UTF-8 inválida, e a validação após as mudanças passou com 12 testes unitários, 10 casos no target de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, build release Linux, build release PE32+ x86-64 para Windows, scans estáticos, `git diff --check`, smoke test headless e interação headless de teclado com criação/fechamento de aba. A auditoria também confirmou que o único `unsafe` permanece isolado no helper `ReplaceFileW`, com buffers UTF-16 terminados em NUL e comentário de segurança.
+
+A revisão arquitetural não justificou uma divisão artificial de `app/mod.rs` ou `ui/mod.rs`: os arquivos são maiores que o ideal, mas as responsabilidades ainda estão agrupadas por fluxo e não há dependência circular ou módulo sem coesão. A limitação material remanescente é a validação visual e funcional em Windows 10/11 real, incluindo clipboard, diálogos nativos, drag and drop, escalas DPI, múltiplos monitores e acessibilidade.

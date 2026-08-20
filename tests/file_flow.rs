@@ -10,6 +10,20 @@ mod error;
 mod file_io;
 
 #[test]
+fn rejects_invalid_utf8_without_panicking() {
+    let directory =
+        std::env::temp_dir().join(format!("bloco-de-notas-invalid-{}", std::process::id()));
+    fs::create_dir_all(&directory).expect("test directory should be created");
+    let path = directory.join("invalid.txt");
+    fs::write(&path, [0xFF, 0xFE, 0xFD]).expect("invalid test file should be created");
+
+    let error = file_io::load(&path).expect_err("invalid UTF-8 should be rejected");
+    assert!(error.to_string().contains("UTF-8 válido"));
+
+    let _ = fs::remove_dir_all(directory);
+}
+
+#[test]
 fn saves_and_reopens_utf8_text_with_bom() {
     let directory =
         std::env::temp_dir().join(format!("bloco-de-notas-test-{}", std::process::id()));

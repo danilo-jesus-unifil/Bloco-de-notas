@@ -31,7 +31,8 @@ pub fn render(app: &mut NotepadApp, ctx: &egui::Context) {
                     .on_hover_text("Nova aba")
                     .clicked()
                 {
-                    command = Some(AppCommand::New);
+                    command = None;
+                    app.new_tab();
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button("Configurações").clicked() {
@@ -44,7 +45,7 @@ pub fn render(app: &mut NotepadApp, ctx: &egui::Context) {
             ui.horizontal(|ui| {
                 ui.menu_button("Arquivo", |ui| {
                     menu_item(ui, "Novo", "Ctrl+N", AppCommand::New, &mut command);
-                    ui.add_enabled(false, egui::Button::new("Nova janela"));
+                    ui.add_enabled(false, egui::Button::new("Nova janela (futuro)"));
                     menu_item(ui, "Abrir…", "Ctrl+O", AppCommand::Open, &mut command);
                     ui.separator();
                     menu_item(ui, "Salvar", "Ctrl+S", AppCommand::Save, &mut command);
@@ -191,7 +192,7 @@ pub fn render(app: &mut NotepadApp, ctx: &egui::Context) {
                     ui.separator();
                     ui.colored_label(
                         theme::TEXT_SECONDARY,
-                        format!("{} caracteres", app.document().text().chars().count()),
+                        format!("{} caracteres", app.document().char_count()),
                     );
                     ui.separator();
                     ui.colored_label(
@@ -207,6 +208,10 @@ pub fn render(app: &mut NotepadApp, ctx: &egui::Context) {
                             ui.colored_label(theme::ACCENT, "Não salvo");
                         } else {
                             ui.colored_label(theme::TEXT_SECONDARY, "Salvo");
+                        }
+                        if let Some(status) = app.status.as_deref() {
+                            ui.separator();
+                            ui.colored_label(theme::TEXT_SECONDARY, status);
                         }
                     });
                 });

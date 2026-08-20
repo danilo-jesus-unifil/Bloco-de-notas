@@ -33,12 +33,20 @@ pub fn load(path: &Path) -> Result<LoadedDocument, AppError> {
         path: path.to_path_buf(),
         source,
     })?;
+    if bytes.len() as u64 > MAX_TEXT_FILE_BYTES {
+        return Err(AppError::User(format!(
+            "O arquivo ‘{}’ excede o limite seguro de 128 MB para esta versão.",
+            path.display()
+        )));
+    }
 
-    let (utf8_bom, content) = match bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
-        Some(content) => (true, content),
-        None => (false, bytes.as_slice()),
+    let (utf8_bom, content) = if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        let mut content = bytes;
+        (true, content.split_off(3))
+    } else {
+        (false, bytes)
     };
-    let raw_text = String::from_utf8(content.to_vec()).map_err(|_| {
+    let raw_text = String::from_utf8(content).map_err(|_| {
         AppError::User(format!(
             "O arquivo ‘{}’ não está em UTF-8 válido. O conteúdo original foi preservado.",
             path.display()
@@ -47,7 +55,7 @@ pub fn load(path: &Path) -> Result<LoadedDocument, AppError> {
     let line_ending = detect_line_ending(&raw_text);
 
     Ok(LoadedDocument {
-        text: normalize_line_endings(&raw_text),
+        text: normalize_line_endings(raw_text),
         utf8_bom,
         line_ending,
     })
@@ -167,7 +175,11 @@ fn detect_line_ending(text: &str) -> LineEnding {
     }
 }
 
-fn normalize_line_endings(text: &str) -> String {
+fn normalize_line_endings(text: String) -> String {
+    if !text.contains('\r') {
+        return text;
+    }
+
     let mut normalized = String::with_capacity(text.len());
     let mut chars = text.chars().peekable();
 
@@ -200,7 +212,10 @@ mod tests {
 
     #[test]
     fn normalizes_common_line_endings_to_lf() {
-        assert_eq!(normalize_line_endings("a\r\nb\rc\nd"), "a\nb\nc\nd");
+        assert_eq!(
+            normalize_line_endings("a\r\nb\rc\nd".to_owned()),
+            "a\nb\nc\nd"
+        );
     }
 
     #[test]
