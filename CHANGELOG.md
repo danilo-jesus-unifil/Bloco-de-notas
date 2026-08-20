@@ -2,6 +2,43 @@
 
 Todas as mudanças relevantes do projeto são registradas neste arquivo.
 
+## [0.2.4] — 2026-08-20
+
+A auditoria repetida simplificou o ciclo de encerramento para manter uma única fonte de verdade sobre a confirmação de alterações não salvas.
+
+### Corrigido
+
+- O comando Sair agora apenas solicita o fechamento da viewport.
+- A confirmação de abas não salvas fica centralizada no evento real `close_requested`, cobrindo menu, atalhos e botão externo sem estado auxiliar temporário.
+
+### Auditoria
+
+Foram repetidos os testes unitários e de integração, Clippy, advisory scan, builds Linux e Windows, scans estáticos, `git diff --check` e smoke test headless. Não foram encontradas novas vulnerabilidades; permanecem apenas os avisos transitivos de manutenção já documentados.
+
+## [0.2.3] — 2026-08-20
+
+A auditoria completa refinou feedback, desempenho e robustez de I/O sem ampliar o escopo do bloco de notas.
+
+### Corrigido
+
+- O status interno passou a ser exibido na barra inferior, e falhas passaram a abrir diálogo contextualizado.
+- O botão `+` passou a criar diretamente uma nova aba; a opção de janela separada foi identificada como futura.
+- A contagem de caracteres passou a ser mantida pelo documento, com cache de linha e coluna por aba, cursor e geração de conteúdo.
+- A abertura de arquivos reduziu cópias evitáveis, revalidou o limite de 128 MB e rejeitou UTF-8 inválido com teste de regressão.
+- O fechamento deixou de depender de autorização temporária entre o comando e o evento da viewport.
+
+## [0.2.2] — 2026-08-20
+
+Atualização corretiva derivada de investigação adicional de comportamentos não cobertos pelas auditorias anteriores.
+
+### Corrigido
+
+- O estado não salvo passou a acompanhar revisões do documento, incluindo Undo/Redo até o conteúdo salvo.
+- Cancelar Salvar como durante o fechamento deixou de ser interpretado como salvamento bem-sucedido.
+- Cada aba recebeu identificador estável para preservar cursor e seleção ao fechar abas anteriores.
+- Atalhos de edição passaram a respeitar o foco nos campos de localizar e substituir.
+- Localizar anterior e Substituir passaram a respeitar a ocorrência selecionada.
+
 ## [0.2.1] — 2026-08-20
 
 A auditoria completa corrigiu falhas sutis de Unicode, endureceu o fluxo de arquivos e revisou a cadeia de dependências sem ampliar o escopo do aplicativo.

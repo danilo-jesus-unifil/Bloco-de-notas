@@ -131,3 +131,11 @@ A nova execução do prompt confirmou novamente os requisitos funcionais, de UX,
 Não foram encontrados novos bugs reais, placeholders funcionais, mensagens de sucesso enganosas, dependências diretas sem uso ou regressões no fluxo de fechamento. O único `unsafe` continua isolado no helper Windows de substituição atômica. A execução visual em Windows 10/11 real permanece a limitação conhecida, especialmente para diálogos nativos, clipboard, drag and drop, DPI, múltiplos monitores e acessibilidade.
 
 Como não houve mudança de código ou de comportamento do produto nesta rodada, não foi criado um release artificial. O v0.2.4 continua sendo o release correto; esta execução gera apenas um registro documental.
+
+## Auditoria do pasted_content_9.txt
+
+A nova revisão completa revalidou o baseline v0.2.4 e encontrou uma inconsistência documental real: `CHANGELOG.md` registrava somente até o v0.2.1, embora os releases v0.2.2, v0.2.3 e v0.2.4 estivessem publicados e documentados em notas próprias. O histórico foi atualizado com entradas fiéis para as três versões, preservando o conteúdo anterior e alinhando a ordem do arquivo às tags existentes.
+
+Após a correção documental, a validação passou novamente com 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, builds release Linux e Windows PE32+ x86-64, scans estáticos, `git diff --check`, smoke test headless e interação headless com identificação da janela e atalhos básicos. Não foram encontrados novos problemas de código, segurança, desempenho, interface ou compatibilidade.
+
+Como o achado foi exclusivamente documental e não alterou o comportamento do aplicativo, não foi criado um novo release. O v0.2.4 continua sendo a versão funcional correta; esta rodada acrescenta somente a atualização do CHANGELOG e o registro desta auditoria.
