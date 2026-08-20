@@ -123,3 +123,11 @@ A repetição integral deste prompt revalidou os requisitos anteriores, os fluxo
 A revisão focada no ciclo de encerramento identificou uma simplificação necessária: o v0.2.3 mantinha um sinal temporário para pular a confirmação depois do comando Sair, mas esse estado poderia ficar stale se o evento de fechamento não chegasse imediatamente. O fluxo foi corrigido para enviar apenas o pedido de fechamento; a confirmação agora fica centralizada no evento `close_requested`, que cobre tanto o menu/atalho quanto o botão externo da janela, sem estado auxiliar. A alteração foi recompilada e testada, e não foram encontrados outros problemas reais novos nesta rodada.
 
 O baseline continua simples e modular o suficiente para o escopo. Não há placeholders funcionais, dependências diretas sem uso, cadeia `accesskit` habilitada ou vulnerabilidade reportada. Permanecem a validação visual em Windows real e o consumo adicional de memória de arquivos próximos do limite de 128 MB como limitações conhecidas.
+
+## Nova repetição da auditoria completa
+
+A nova execução do prompt confirmou novamente os requisitos funcionais, de UX, arquitetura, segurança, desempenho e compatibilidade já documentados. A bateria passou com 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, build release Linux, build PE32+ x86-64 para Windows, scans de placeholders e `unsafe`, `git diff --check`, smoke test headless e interação headless com identificação da janela e atalhos básicos.
+
+Não foram encontrados novos bugs reais, placeholders funcionais, mensagens de sucesso enganosas, dependências diretas sem uso ou regressões no fluxo de fechamento. O único `unsafe` continua isolado no helper Windows de substituição atômica. A execução visual em Windows 10/11 real permanece a limitação conhecida, especialmente para diálogos nativos, clipboard, drag and drop, DPI, múltiplos monitores e acessibilidade.
+
+Como não houve mudança de código ou de comportamento do produto nesta rodada, não foi criado um release artificial. O v0.2.4 continua sendo o release correto; esta execução gera apenas um registro documental.
