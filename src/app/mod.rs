@@ -90,7 +90,6 @@ pub struct NotepadApp {
     pub(crate) status: Option<String>,
     next_tab_id: u64,
     cursor_cache: Option<CursorCache>,
-    skip_next_close_confirmation: bool,
 }
 
 impl NotepadApp {
@@ -112,7 +111,6 @@ impl NotepadApp {
             status: Some("Pronto".to_owned()),
             next_tab_id: 1,
             cursor_cache: None,
-            skip_next_close_confirmation: false,
         }
     }
 
@@ -447,10 +445,7 @@ impl NotepadApp {
     }
 
     fn close_application(&mut self, ctx: &egui::Context) -> Result<(), AppError> {
-        if self.confirm_close_all() {
-            self.skip_next_close_confirmation = true;
-            ctx.send_viewport_cmd(ViewportCommand::Close);
-        }
+        ctx.send_viewport_cmd(ViewportCommand::Close);
         Ok(())
     }
 
@@ -671,12 +666,7 @@ impl NotepadApp {
     }
 
     pub(crate) fn accept_viewport_close(&mut self, ctx: &egui::Context) {
-        if !ctx.input(|input| input.viewport().close_requested()) {
-            return;
-        }
-        if self.skip_next_close_confirmation {
-            self.skip_next_close_confirmation = false;
-        } else if !self.confirm_close_all() {
+        if ctx.input(|input| input.viewport().close_requested()) && !self.confirm_close_all() {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
         }
     }
