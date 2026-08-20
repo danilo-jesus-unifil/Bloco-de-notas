@@ -4,7 +4,7 @@ Um bloco de notas simples, rápido e predominantemente escuro, escrito em Rust c
 
 ## Escopo entregue
 
-A versão `0.2.0` acrescenta uma experiência visual mais próxima do Bloco de Notas do Windows 11 sem abandonar a compatibilidade com Windows 10. A janela possui cabeçalho compacto com ícone, abas locais, botão de nova aba, menus familiares, painel de configurações mínimo, status bar detalhada e drag and drop de arquivos de texto.
+A versão `0.2.1` mantém a experiência visual mais próxima do Bloco de Notas do Windows 11 sem abandonar a compatibilidade com Windows 10. A janela possui cabeçalho compacto com ícone, abas locais, botão de nova aba, menus familiares, painel de configurações mínimo, status bar detalhada e drag and drop de arquivos de texto.
 
 O aplicativo inclui edição Unicode, quebra automática de linha, zoom por tamanho da fonte, novo documento, abrir, salvar, salvar como, confirmação para alterações não salvas, desfazer, refazer, copiar, recortar, colar, selecionar tudo, localizar, localizar anterior/próximo, substituir e substituição em massa. Os atalhos principais incluem `Ctrl+N`, `Ctrl+O`, `Ctrl+S`, `Ctrl+Shift+S`, `Ctrl+W`, `Ctrl+Z`, `Ctrl+Y`, `Ctrl+X`, `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+F`, `Ctrl+H`, `Ctrl++`, `Ctrl+-` e `Ctrl+0`.
 
@@ -14,9 +14,13 @@ Cada aba mantém seu documento, caminho, estado de alteração, histórico de ed
 
 Os formatos de texto priorizados são `.txt`, `.md`, `.log`, `.csv`, `.ini` e `.json`; o aplicativo não interpreta esses formatos, apenas edita texto. Arquivos são lidos como UTF-8, com suporte a BOM UTF-8 e mensagens controladas para bytes inválidos. Finais de linha `CRLF`, `LF` e `CR` são detectados, normalizados internamente e serializados novamente de forma previsível. O salvamento usa arquivo temporário no mesmo diretório, `flush`, `sync_all` e substituição controlada para reduzir o risco de deixar o arquivo original parcialmente gravado.
 
+Para evitar consumo de memória imprevisível, a abertura recusa arquivos maiores que 128 MB e informa o limite ao usuário antes de ler o conteúdo. Essa é uma proteção deliberada para um editor simples que mantém o documento em memória.
+
 ## Configurações persistentes
 
 O tema escuro é o padrão. O painel de configurações persiste somente preferências mínimas por meio do armazenamento do eframe em local apropriado ao sistema: tamanho da fonte, quebra automática, visibilidade da barra de status, comportamento de abertura e modo de tema. As opções Claro e Seguir o sistema são apresentadas como futuras e permanecem desabilitadas nesta versão, sem simular suporte incompleto. O tamanho e a posição da janela também podem ser persistidos pelo eframe.
+
+O recurso opcional `accesskit` do eframe permanece desativado nesta versão para não incluir a cadeia Linux de acessibilidade que trazia vulnerabilidades altas em `quick-xml 0.30.0`. O teclado e os atalhos continuam sendo tratados pela interface, e a retomada de acessibilidade nativa deverá ocorrer junto com uma versão atualizada e compatível do framework.
 
 ## Estrutura
 
@@ -34,6 +38,7 @@ O tema escuro é o padrão. O painel de configurações persiste somente prefer�
 | `assets/` | Manifesto DPI e ícone Windows |
 | `docs/DEVELOPMENT_PLAYBOOK.md` | Guia interno de Git e de projeto |
 | `docs/COMPLEMENT_PLAN.md` | Análise e limites do complemento |
+| `docs/AUDIT_FINDINGS.md` | Registro da auditoria, correções e limitações |
 
 ## Desenvolvimento
 
@@ -44,6 +49,7 @@ cargo fmt --check
 cargo check
 cargo test
 cargo clippy --all-targets --all-features -- -D warnings
+cargo audit
 cargo build --release
 ```
 
@@ -71,7 +77,7 @@ O diretório `dist/` é reservado para artefatos gerados e não é commitado. Um
 
 ## Limitações conhecidas da validação
 
-O ambiente de desenvolvimento desta entrega é Linux. Os testes automatizados, a análise estática e o cross-build PE validam a lógica Rust, o formato do executável Windows e a integração de recursos, mas não substituem a execução manual em Windows 10/11. Antes de distribuir amplamente, valide o arquivo final em Windows 10 e 11 com escalas de 100%, 125%, 150%, 175% e 200%, incluindo abertura, salvamento, clipboard, drag and drop, abas, menus, fechamento com alterações e movimento entre monitores com DPI diferente.
+O ambiente de desenvolvimento desta entrega é Linux. Os testes automatizados, a análise estática, o advisory scan e o cross-build PE validam a lógica Rust, o formato do executável Windows e a integração de recursos, mas não substituem a execução manual em Windows 10/11. Antes de distribuir amplamente, valide o arquivo final em Windows 10 e 11 com escalas de 100%, 125%, 150%, 175% e 200%, incluindo abertura, salvamento, clipboard, drag and drop, abas, menus, fechamento com alterações e movimento entre monitores com DPI diferente.
 
 ## Licença
 

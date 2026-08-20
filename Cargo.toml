@@ -1,6 +1,6 @@
 [package]
 name = "bloco-de-notas"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Um bloco de notas simples, rápido e escuro para Windows 10."
 license = "MIT"
@@ -10,9 +10,12 @@ build = "build.rs"
 
 [dependencies]
 arboard = "3.4.1"
-eframe = { version = "0.29.1", features = ["persistence"] }
+eframe = { version = "0.29.1", default-features = false, features = ["glow", "persistence", "x11", "wayland", "default_fonts"] }
 rfd = "0.14.1"
 serde = { version = "1.0", features = ["derive"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1.12"

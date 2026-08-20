@@ -6,6 +6,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::document::LineEnding;
 use crate::error::AppError;
 
+const MAX_TEXT_FILE_BYTES: u64 = 128 * 1024 * 1024;
+
 #[derive(Debug)]
 pub struct LoadedDocument {
     pub text: String,
@@ -14,6 +16,18 @@ pub struct LoadedDocument {
 }
 
 pub fn load(path: &Path) -> Result<LoadedDocument, AppError> {
+    let metadata = fs::metadata(path).map_err(|source| AppError::Io {
+        operation: "inspecionar o arquivo",
+        path: path.to_path_buf(),
+        source,
+    })?;
+    if metadata.len() > MAX_TEXT_FILE_BYTES {
+        return Err(AppError::User(format!(
+            "O arquivo ‘{}’ excede o limite seguro de 128 MB para esta versão.",
+            path.display()
+        )));
+    }
+
     let bytes = fs::read(path).map_err(|source| AppError::Io {
         operation: "abrir o arquivo",
         path: path.to_path_buf(),
@@ -81,14 +95,51 @@ fn write_temporary_file(
     Ok(())
 }
 
+#[cfg(not(windows))]
 fn replace_file(temporary_path: &Path, target_path: &Path) -> io::Result<()> {
-    match fs::rename(temporary_path, target_path) {
-        Ok(()) => Ok(()),
-        Err(rename_error) if target_path.exists() => {
-            fs::remove_file(target_path)?;
-            fs::rename(temporary_path, target_path).map_err(|_| rename_error)
-        }
-        Err(error) => Err(error),
+    // On Unix-like targets, rename within one directory replaces atomically.
+    fs::rename(temporary_path, target_path)
+}
+
+#[cfg(windows)]
+fn replace_file(temporary_path: &Path, target_path: &Path) -> io::Result<()> {
+    if !target_path.exists() {
+        return fs::rename(temporary_path, target_path);
+    }
+    replace_existing_windows_file(temporary_path, target_path)
+}
+
+#[cfg(windows)]
+fn replace_existing_windows_file(temporary_path: &Path, target_path: &Path) -> io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    use std::ptr::null;
+    use windows_sys::Win32::Storage::FileSystem::ReplaceFileW;
+
+    let target_wide: Vec<u16> = target_path
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect();
+    let temporary_wide: Vec<u16> = temporary_path
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect();
+    // SAFETY: both UTF-16 buffers are NUL-terminated, live for the call, and the API does not retain them.
+    let replaced = unsafe {
+        ReplaceFileW(
+            target_wide.as_ptr(),
+            temporary_wide.as_ptr(),
+            null(),
+            0,
+            null(),
+            null(),
+        )
+    };
+    if replaced == 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
     }
 }
 
@@ -157,5 +208,16 @@ mod tests {
         assert_eq!(detect_line_ending("a\r\nb"), LineEnding::CrLf);
         assert_eq!(serialize_line_endings("a\nb", LineEnding::CrLf), "a\r\nb");
         assert_eq!(serialize_line_endings("a\nb", LineEnding::Cr), "a\rb");
+    }
+
+    #[test]
+    fn rejects_files_larger_than_the_memory_guard() {
+        let path = std::env::temp_dir().join(format!("bloco-large-{}", std::process::id()));
+        let file = std::fs::File::create(&path).expect("test file should be created");
+        file.set_len(super::MAX_TEXT_FILE_BYTES + 1)
+            .expect("sparse test file should be resized");
+        let result = super::load(&path);
+        assert!(result.is_err());
+        let _ = std::fs::remove_file(path);
     }
 }

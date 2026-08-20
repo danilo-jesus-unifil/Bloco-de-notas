@@ -12,43 +12,46 @@ impl SearchState {
         self.message = None;
     }
 
-    pub fn find_next(&mut self, text: &str, from: usize) -> Option<(usize, usize)> {
+    pub fn find_next(&mut self, text: &str, from_char: usize) -> Option<(usize, usize)> {
         if self.query.is_empty() {
             self.last_match = None;
             self.message = Some("Digite um texto para localizar.".to_owned());
             return None;
         }
 
-        let start = from.min(text.len());
-        let found = text[start..]
+        let text_char_count = text.chars().count();
+        let start_char = from_char.min(text_char_count);
+        let start_byte = byte_index_for_char(text, start_char);
+        let found = text[start_byte..]
             .find(&self.query)
-            .map(|offset| (start + offset, start + offset + self.query.len()))
-            .or_else(|| {
-                text[..start]
-                    .find(&self.query)
-                    .map(|offset| (offset, offset + self.query.len()))
-            });
+            .map(|offset| start_byte + offset)
+            .or_else(|| text[..start_byte].find(&self.query));
 
-        match found {
-            Some(range) => {
-                self.last_match = Some(range.0);
-                self.message = Some("Correspondência encontrada.".to_owned());
-                Some(range)
-            }
-            None => {
-                self.last_match = None;
-                self.message = Some("Nenhuma correspondência encontrada.".to_owned());
-                None
-            }
-        }
+        self.apply_result(text, found)
     }
 
-    pub fn replace_first(&mut self, text: &str, from: usize) -> Option<String> {
-        let (start, end) = self.find_next(text, from)?;
+    pub fn find_previous(&mut self, text: &str, before_char: usize) -> Option<(usize, usize)> {
+        if self.query.is_empty() {
+            self.last_match = None;
+            self.message = Some("Digite um texto para localizar.".to_owned());
+            return None;
+        }
+
+        let before_byte = byte_index_for_char(text, before_char.min(text.chars().count()));
+        let found = text[..before_byte]
+            .rfind(&self.query)
+            .or_else(|| text.rfind(&self.query));
+        self.apply_result(text, found)
+    }
+
+    pub fn replace_first(&mut self, text: &str, from_char: usize) -> Option<String> {
+        let (start_char, end_char) = self.find_next(text, from_char)?;
+        let start_byte = byte_index_for_char(text, start_char);
+        let end_byte = byte_index_for_char(text, end_char);
         let mut replaced = String::with_capacity(text.len() + self.replacement.len());
-        replaced.push_str(&text[..start]);
+        replaced.push_str(&text[..start_byte]);
         replaced.push_str(&self.replacement);
-        replaced.push_str(&text[end..]);
+        replaced.push_str(&text[end_byte..]);
         Some(replaced)
     }
 
@@ -67,6 +70,30 @@ impl SearchState {
         self.message = Some(format!("{count} ocorrência(s) substituída(s)."));
         Some(text.replace(&self.query, &self.replacement))
     }
+
+    fn apply_result(&mut self, text: &str, found_byte: Option<usize>) -> Option<(usize, usize)> {
+        match found_byte {
+            Some(start_byte) => {
+                let end_byte = start_byte + self.query.len();
+                let start_char = text[..start_byte].chars().count();
+                let end_char = text[..end_byte].chars().count();
+                self.last_match = Some(start_char);
+                self.message = Some("Correspondência encontrada.".to_owned());
+                Some((start_char, end_char))
+            }
+            None => {
+                self.last_match = None;
+                self.message = Some("Nenhuma correspondência encontrada.".to_owned());
+                None
+            }
+        }
+    }
+}
+
+fn byte_index_for_char(text: &str, char_index: usize) -> usize {
+    text.char_indices()
+        .nth(char_index)
+        .map_or(text.len(), |(byte_index, _)| byte_index)
 }
 
 #[cfg(test)]
@@ -90,5 +117,25 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(search.replace_all("a a"), Some("b b".into()));
+    }
+
+    #[test]
+    fn returns_character_ranges_for_unicode_search() {
+        let mut search = SearchState {
+            query: "café".into(),
+            replacement: "chá".into(),
+            ..Default::default()
+        };
+        assert_eq!(search.find_next("🙂 café", 0), Some((2, 6)));
+        assert_eq!(search.replace_first("🙂 café", 0), Some("🙂 chá".into()));
+    }
+
+    #[test]
+    fn finds_previous_unicode_match_without_splitting_bytes() {
+        let mut search = SearchState {
+            query: "é".into(),
+            ..Default::default()
+        };
+        assert_eq!(search.find_previous("café é", 6), Some((5, 6)));
     }
 }

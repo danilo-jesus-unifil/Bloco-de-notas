@@ -2,6 +2,21 @@
 
 Todas as mudanças relevantes do projeto são registradas neste arquivo.
 
+## [0.2.1] — 2026-08-20
+
+A auditoria completa corrigiu falhas sutis de Unicode, endureceu o fluxo de arquivos e revisou a cadeia de dependências sem ampliar o escopo do aplicativo.
+
+### Corrigido
+
+- Busca reversa e substituição agora usam índices de caracteres seguros para conteúdo Unicode, com regressões para acentos e emoji.
+- Arquivos acima de 128 MB são recusados antes da leitura integral para evitar consumo de memória imprevisível.
+- Salvamento em Windows usa `ReplaceFileW` isolado e documentado; o caminho portátil não remove o original quando a substituição falha.
+- A cadeia opcional Linux de `accesskit` foi desativada no eframe 0.29.1 para eliminar as vulnerabilidades altas reportadas em `quick-xml 0.30.0`.
+
+### Auditoria
+
+`cargo fmt --check`, `cargo check`, `cargo test`, Clippy sem warnings, `cargo audit`, build release Linux, check/build target Windows, smoke test headless sob Xvfb e `git diff --check` foram executados. O advisory scan não reporta vulnerabilidades, mas ainda registra os avisos de manutenção transitivos de `paste 1.0.15` e `ttf-parser 0.25.1`.
+
 ## [0.2.0] — 2026-08-20
 
 A versão complementar aproxima a interface da experiência visual do Bloco de Notas do Windows 11, mantendo a simplicidade e a compatibilidade com Windows 10.

@@ -225,25 +225,18 @@ impl NotepadApp {
     }
 
     pub(crate) fn find_previous(&mut self, ctx: &egui::Context) {
-        let query = self.search().query.clone();
-        if query.is_empty() {
-            self.search_mut().message = Some("Digite um texto para localizar.".to_owned());
-            return;
-        }
+        let cursor = self.cursor_char_index(ctx);
         let text = self.document().text().to_owned();
-        let cursor = self.cursor_char_index(ctx).min(text.len());
-        let found = text[..cursor].rfind(&query).or_else(|| text.rfind(&query));
-        match found {
-            Some(start) => {
-                self.search_mut().last_match = Some(start);
-                self.search_mut().message = Some("Correspondência encontrada.".to_owned());
-                self.set_selection(ctx, start, start + query.len());
-            }
-            None => {
-                self.search_mut().last_match = None;
-                self.search_mut().message = Some("Nenhuma correspondência encontrada.".to_owned());
-            }
+        let mut search = SearchState {
+            query: self.search().query.clone(),
+            replacement: self.search().replacement.clone(),
+            ..Default::default()
+        };
+        if let Some((start, end)) = search.find_previous(&text, cursor) {
+            self.set_selection(ctx, start, end);
         }
+        self.search_mut().last_match = search.last_match;
+        self.search_mut().message = search.message;
     }
 
     pub(crate) fn replace_one(&mut self, ctx: &egui::Context) {
