@@ -155,3 +155,11 @@ A auditoria completa revalidou novamente todos os requisitos anteriores, os flux
 A validação passou com 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, builds release Linux e Windows PE32+ x86-64, scans de placeholders e `unsafe`, `git diff --check`, smoke test headless e interação headless com identificação da janela e atalhos básicos. O único `unsafe` continua isolado no helper Windows de substituição atômica; os avisos transitivos de manutenção para `paste` e `ttf-parser` permanecem documentados.
 
 A única limitação material continua sendo a validação visual e funcional em Windows 10/11 real, especialmente diálogos nativos, clipboard, drag and drop, DPI, múltiplos monitores e acessibilidade. Como não houve alteração de código ou comportamento, não foi criado novo release; o v0.2.4 permanece correto.
+
+## Nova repetição do pasted_content_8.txt
+
+A revisão repetida confirmou novamente os requisitos anteriores, os fluxos funcionais, a arquitetura, a interface, a segurança, o desempenho, a compatibilidade Windows, as dependências e a documentação. Não foram encontrados bugs novos, placeholders funcionais, implementações fake, regressões ou inconsistências documentais.
+
+A validação passou com 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, builds release Linux e Windows PE32+ x86-64, scans estáticos, `git diff --check`, smoke test headless e interação headless com identificação da janela e atalhos básicos. O único `unsafe` continua restrito ao helper Windows de substituição atômica, e os avisos transitivos de manutenção permanecem documentados.
+
+A validação visual em Windows 10/11 real continua pendente para diálogos nativos, clipboard, drag and drop, DPI, múltiplos monitores e acessibilidade. Como não houve alteração de código ou comportamento, nenhum novo release foi criado; o v0.2.4 permanece sendo a versão correta.
