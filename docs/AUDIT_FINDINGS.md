@@ -78,3 +78,7 @@ A sétima execução repetiu o mesmo ciclo completo, com 10 testes unitários, 7
 ## Oitava execução da auditoria
 
 A oitava execução repetiu novamente o ciclo de verificação completo. Os testes unitários e de integração, Clippy, advisory scan, build Linux release, check Windows, scans estáticos, `git diff --check` e smoke test headless passaram sem alterações de comportamento. O baseline v0.2.1 permanece estável e nenhum novo release é justificável.
+
+## Nona execução da auditoria
+
+A nona execução confirmou os mesmos resultados em uma nova rodada independente: testes unitários e de integração, Clippy, advisory scan, build Linux release, check Windows, scans estáticos, verificação de diff e smoke test headless passaram. Não houve mudança de comportamento nem falha nova que justificasse alteração funcional ou nova versão.
