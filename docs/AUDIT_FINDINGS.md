@@ -66,3 +66,7 @@ A quarta execução repetiu a análise funcional, os scans de segurança e place
 ## Quinta execução da auditoria
 
 A quinta execução reproduziu novamente os testes, Clippy, advisory scan, build Linux release, check Windows, scans estáticos e smoke test headless. Não foram observados problemas novos de funcionamento, segurança, desempenho, arquitetura ou compatibilidade. O release v0.2.1 continua sendo o baseline correto.
+
+## Sexta execução da auditoria
+
+A sexta execução repetiu o ciclo completo de qualidade, incluindo testes unitários e de integração, Clippy, advisory scan, build otimizado, check Windows, scans estáticos, `git diff --check` e smoke test headless. Os resultados permaneceram estáveis e não surgiu nenhuma falha real que justificasse correção de código ou novo release.
