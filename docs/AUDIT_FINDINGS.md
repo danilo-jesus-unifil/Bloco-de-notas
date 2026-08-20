@@ -58,3 +58,7 @@ Também foram repetidos os testes unitários e de integração, Clippy, advisory
 ## Terceira execução da auditoria
 
 A auditoria foi executada novamente sobre o mesmo baseline publicado e reproduziu os resultados anteriores: 10 testes unitários, 7 casos no harness de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, build Linux release, check Windows e smoke test headless passaram. Como não houve problema novo nem correção de código, o release v0.2.1 permanece a versão correta e não foi criado um v0.2.2 artificial.
+
+## Quarta execução da auditoria
+
+A quarta execução repetiu a análise funcional, os scans de segurança e placeholders, a revisão arquitetural, a análise de dependências, os testes de regressão, o build otimizado, o check Windows e a inicialização headless. Os resultados permaneceram consistentes e nenhuma falha nova justificou uma alteração de código ou um novo release.
