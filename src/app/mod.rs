@@ -50,6 +50,7 @@ impl Default for PersistedSettings {
 }
 
 pub(crate) struct NoteTab {
+    pub(crate) id: u64,
     pub(crate) document: Document,
     pub(crate) search: SearchState,
     pub(crate) font_size: f32,
@@ -57,8 +58,9 @@ pub(crate) struct NoteTab {
 }
 
 impl NoteTab {
-    fn with_settings(settings: PersistedSettings) -> Self {
+    fn with_settings(id: u64, settings: PersistedSettings) -> Self {
         Self {
+            id,
             document: Document::new(),
             search: SearchState::default(),
             font_size: settings.font_size.clamp(10.0, 32.0),
@@ -77,6 +79,7 @@ pub struct NotepadApp {
     pub(crate) open_in_new_tab: bool,
     pub(crate) theme_mode: ThemeMode,
     pub(crate) status: Option<String>,
+    next_tab_id: u64,
 }
 
 impl NotepadApp {
@@ -87,7 +90,7 @@ impl NotepadApp {
             .unwrap_or_default();
         theme::apply(&creation_context.egui_ctx);
         Self {
-            tabs: vec![NoteTab::with_settings(settings)],
+            tabs: vec![NoteTab::with_settings(0, settings)],
             active_tab: 0,
             show_search: false,
             replace_mode: false,
@@ -96,6 +99,7 @@ impl NotepadApp {
             open_in_new_tab: settings.open_in_new_tab,
             theme_mode: settings.theme,
             status: Some("Pronto".to_owned()),
+            next_tab_id: 1,
         }
     }
 
@@ -134,7 +138,7 @@ impl NotepadApp {
     }
 
     pub(crate) fn text_edit_id(&self) -> Id {
-        Id::new((TEXT_EDIT_ID, self.active_tab))
+        Id::new((TEXT_EDIT_ID, self.tabs[self.active_tab].id))
     }
 
     pub(crate) fn tab_label(&self, index: usize) -> String {
@@ -147,8 +151,8 @@ impl NotepadApp {
         let result = match command {
             AppCommand::New => self.new_document(),
             AppCommand::Open => self.open_document(),
-            AppCommand::Save => self.save_document(),
-            AppCommand::SaveAs => self.save_document_as(),
+            AppCommand::Save => self.save_document().map(|_| ()),
+            AppCommand::SaveAs => self.save_document_as().map(|_| ()),
             AppCommand::CloseTab => self.close_tab(),
             AppCommand::Quit => self.close_application(ctx),
             AppCommand::Undo => {
@@ -225,14 +229,16 @@ impl NotepadApp {
     }
 
     pub(crate) fn find_previous(&mut self, ctx: &egui::Context) {
-        let cursor = self.cursor_char_index(ctx);
+        let before = self
+            .selected_char_range(ctx)
+            .map_or_else(|| self.cursor_char_index(ctx), |(start, _)| start);
         let text = self.document().text().to_owned();
         let mut search = SearchState {
             query: self.search().query.clone(),
             replacement: self.search().replacement.clone(),
             ..Default::default()
         };
-        if let Some((start, end)) = search.find_previous(&text, cursor) {
+        if let Some((start, end)) = search.find_previous(&text, before) {
             self.set_selection(ctx, start, end);
         }
         self.search_mut().last_match = search.last_match;
@@ -240,18 +246,27 @@ impl NotepadApp {
     }
 
     pub(crate) fn replace_one(&mut self, ctx: &egui::Context) {
-        let cursor = self.cursor_char_index(ctx);
-        let text = self.document().text().to_owned();
+        let query = self.search().query.clone();
         let replacement = self.search().replacement.clone();
+        let cursor = self
+            .selected_char_range(ctx)
+            .filter(|(start, end)| slice_by_chars(self.document().text(), *start, *end) == query)
+            .map_or_else(|| self.cursor_char_index(ctx), |(start, _)| start);
+        let text = self.document().text().to_owned();
+        let replacement_length = replacement.chars().count();
         let mut search = SearchState {
-            query: self.search().query.clone(),
+            query,
             replacement,
             ..Default::default()
         };
         if let Some(replaced) = search.replace_first(&text, cursor) {
             *self.document_mut().text_mut() = replaced;
             self.document_mut().sync_editor_change();
-            self.set_cursor_to_end(ctx);
+            self.set_selection(
+                ctx,
+                cursor + replacement_length,
+                cursor + replacement_length,
+            );
             self.status = Some("Uma ocorrência foi substituída.".to_owned());
         }
         self.search_mut().message = search.message;
@@ -305,7 +320,9 @@ impl NotepadApp {
             show_status_bar: self.show_status_bar,
             open_in_new_tab: self.open_in_new_tab,
         };
-        self.tabs.push(NoteTab::with_settings(settings));
+        let tab_id = self.next_tab_id;
+        self.next_tab_id = self.next_tab_id.wrapping_add(1);
+        self.tabs.push(NoteTab::with_settings(tab_id, settings));
         self.active_tab = self.tabs.len() - 1;
         self.status = Some("Nova aba".to_owned());
     }
@@ -324,7 +341,7 @@ impl NotepadApp {
     }
 
     fn open_document(&mut self) -> Result<(), AppError> {
-        if !self.confirm_discard("abrir outro documento") {
+        if !self.open_in_new_tab && !self.confirm_discard("abrir outro documento") {
             return Ok(());
         }
 
@@ -361,14 +378,17 @@ impl NotepadApp {
         Ok(())
     }
 
-    fn save_document(&mut self) -> Result<(), AppError> {
+    fn save_document(&mut self) -> Result<bool, AppError> {
         match self.document().path().map(PathBuf::from) {
-            Some(path) => self.save_to_path(path),
+            Some(path) => {
+                self.save_to_path(path)?;
+                Ok(true)
+            }
             None => self.save_document_as(),
         }
     }
 
-    fn save_document_as(&mut self) -> Result<(), AppError> {
+    fn save_document_as(&mut self) -> Result<bool, AppError> {
         let Some(path) = FileDialog::new()
             .add_filter(
                 "Arquivo de texto",
@@ -381,10 +401,11 @@ impl NotepadApp {
             })
             .save_file()
         else {
-            return Ok(());
+            return Ok(false);
         };
 
-        self.save_to_path(path)
+        self.save_to_path(path)?;
+        Ok(true)
     }
 
     fn save_to_path(&mut self, path: PathBuf) -> Result<(), AppError> {
@@ -434,7 +455,7 @@ impl NotepadApp {
             .show();
 
         match result {
-            MessageDialogResult::Yes => self.save_document().is_ok(),
+            MessageDialogResult::Yes => self.save_document().unwrap_or(false),
             MessageDialogResult::No => true,
             MessageDialogResult::Cancel
             | MessageDialogResult::Ok
@@ -472,7 +493,7 @@ impl NotepadApp {
         let Some(path) = self.tabs[index].document.path().map(PathBuf::from) else {
             let previous_tab = self.active_tab;
             self.active_tab = index;
-            let result = self.save_document().is_ok();
+            let result = self.save_document().unwrap_or(false);
             self.active_tab = previous_tab;
             return result;
         };

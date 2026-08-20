@@ -5,7 +5,7 @@ use crate::commands::AppCommand;
 use crate::theme;
 
 pub fn render(app: &mut NotepadApp, ctx: &egui::Context) {
-    let mut command = keyboard_command(ctx);
+    let mut command = keyboard_command(ctx, app.text_edit_id());
 
     egui::TopBottomPanel::top("app-header")
         .frame(
@@ -393,7 +393,13 @@ fn menu_item_enabled(
     }
 }
 
-fn keyboard_command(ctx: &egui::Context) -> Option<AppCommand> {
+fn keyboard_command(ctx: &egui::Context, editor_id: egui::Id) -> Option<AppCommand> {
+    let document_editing_focused = ctx.memory(|memory| {
+        memory
+            .focused()
+            .is_none_or(|focused_id| focused_id == editor_id)
+    });
+
     ctx.input_mut(|input| {
         if input.consume_key(Modifiers::COMMAND, Key::N) {
             Some(AppCommand::New)
@@ -405,17 +411,17 @@ fn keyboard_command(ctx: &egui::Context) -> Option<AppCommand> {
             Some(AppCommand::Save)
         } else if input.consume_key(Modifiers::COMMAND, Key::W) {
             Some(AppCommand::CloseTab)
-        } else if input.consume_key(Modifiers::COMMAND, Key::Z) {
+        } else if document_editing_focused && input.consume_key(Modifiers::COMMAND, Key::Z) {
             Some(AppCommand::Undo)
-        } else if input.consume_key(Modifiers::COMMAND, Key::Y) {
+        } else if document_editing_focused && input.consume_key(Modifiers::COMMAND, Key::Y) {
             Some(AppCommand::Redo)
-        } else if input.consume_key(Modifiers::COMMAND, Key::X) {
+        } else if document_editing_focused && input.consume_key(Modifiers::COMMAND, Key::X) {
             Some(AppCommand::Cut)
-        } else if input.consume_key(Modifiers::COMMAND, Key::C) {
+        } else if document_editing_focused && input.consume_key(Modifiers::COMMAND, Key::C) {
             Some(AppCommand::Copy)
-        } else if input.consume_key(Modifiers::COMMAND, Key::V) {
+        } else if document_editing_focused && input.consume_key(Modifiers::COMMAND, Key::V) {
             Some(AppCommand::Paste)
-        } else if input.consume_key(Modifiers::COMMAND, Key::A) {
+        } else if document_editing_focused && input.consume_key(Modifiers::COMMAND, Key::A) {
             Some(AppCommand::SelectAll)
         } else if input.consume_key(Modifiers::COMMAND, Key::F) {
             Some(AppCommand::Find)

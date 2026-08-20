@@ -22,6 +22,7 @@ impl LineEnding {
 #[derive(Clone, Debug)]
 struct Snapshot {
     text: String,
+    revision: u64,
 }
 
 #[derive(Debug)]
@@ -34,6 +35,8 @@ pub struct Document {
     undo: Vec<Snapshot>,
     redo: Vec<Snapshot>,
     editor_baseline: String,
+    revision: u64,
+    saved_revision: u64,
 }
 
 impl Default for Document {
@@ -58,6 +61,8 @@ impl Document {
             undo: Vec::new(),
             redo: Vec::new(),
             editor_baseline: String::new(),
+            revision: 0,
+            saved_revision: 0,
         }
     }
 
@@ -100,10 +105,12 @@ impl Document {
 
         self.undo.push(Snapshot {
             text: self.editor_baseline.clone(),
+            revision: self.revision,
         });
         self.trim_history();
         self.editor_baseline = self.text.clone();
-        self.dirty = true;
+        self.revision = self.revision.wrapping_add(1);
+        self.dirty = self.revision != self.saved_revision;
         self.redo.clear();
         true
     }
@@ -117,6 +124,8 @@ impl Document {
     ) {
         self.text = text;
         self.editor_baseline = self.text.clone();
+        self.revision = 0;
+        self.saved_revision = 0;
         self.path = Some(path);
         self.dirty = false;
         self.utf8_bom = utf8_bom;
@@ -133,6 +142,8 @@ impl Document {
         };
         self.text.clear();
         self.editor_baseline.clear();
+        self.revision = 0;
+        self.saved_revision = 0;
         self.path = None;
         self.dirty = false;
         self.utf8_bom = false;
@@ -146,6 +157,7 @@ impl Document {
         self.utf8_bom = utf8_bom;
         self.dirty = false;
         self.editor_baseline = self.text.clone();
+        self.saved_revision = self.revision;
         self.undo.clear();
         self.redo.clear();
     }
@@ -165,10 +177,12 @@ impl Document {
 
         self.redo.push(Snapshot {
             text: self.text.clone(),
+            revision: self.revision,
         });
         self.text = snapshot.text;
+        self.revision = snapshot.revision;
         self.editor_baseline = self.text.clone();
-        self.dirty = true;
+        self.dirty = self.revision != self.saved_revision;
         true
     }
 
@@ -179,11 +193,13 @@ impl Document {
 
         self.undo.push(Snapshot {
             text: self.text.clone(),
+            revision: self.revision,
         });
         self.trim_history();
         self.text = snapshot.text;
+        self.revision = snapshot.revision;
         self.editor_baseline = self.text.clone();
-        self.dirty = true;
+        self.dirty = self.revision != self.saved_revision;
         true
     }
 
@@ -220,6 +236,23 @@ mod tests {
         assert!(!document.is_dirty());
         assert!(!document.can_undo());
         assert_eq!(document.file_name(), "arquivo.txt");
+    }
+
+    #[test]
+    fn undoing_to_saved_content_clears_dirty_state() {
+        let mut document = Document::new();
+        document.text_mut().push_str("texto salvo");
+        document.sync_editor_change();
+        document.mark_saved("arquivo.txt".into(), false);
+
+        document.text_mut().push_str(" alterado");
+        document.sync_editor_change();
+        assert!(document.is_dirty());
+        assert!(document.undo());
+        assert_eq!(document.text(), "texto salvo");
+        assert!(!document.is_dirty());
+        assert!(document.redo());
+        assert!(document.is_dirty());
     }
 
     #[test]

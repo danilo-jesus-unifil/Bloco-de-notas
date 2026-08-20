@@ -82,3 +82,19 @@ A oitava execução repetiu novamente o ciclo de verificação completo. Os test
 ## Nona execução da auditoria
 
 A nona execução confirmou os mesmos resultados em uma nova rodada independente: testes unitários e de integração, Clippy, advisory scan, build Linux release, check Windows, scans estáticos, verificação de diff e smoke test headless passaram. Não houve mudança de comportamento nem falha nova que justificasse alteração funcional ou nova versão.
+
+## Investigação adicional de comportamentos não cobertos
+
+Uma revisão orientada a fluxos de usuário, além da bateria tradicional de compilação e testes, encontrou problemas reais que não apareciam no baseline das auditorias anteriores. As correções foram mantidas pequenas e limitadas ao comportamento do editor, das abas e do fechamento seguro.
+
+| Área | Problema confirmado | Correção aplicada |
+|---|---|---|
+| Dirty state | Depois de editar um documento salvo e desfazer até o conteúdo salvo, o documento continuava marcado como não salvo e poderia pedir confirmação desnecessária ao fechar. | O histórico agora carrega revisões; undo e redo comparam a revisão atual à revisão salva. Foi adicionado teste de regressão, incluindo redo posterior. |
+| Salvamento cancelado | Ao confirmar “Salvar” para fechar ou descartar uma aba sem nome, cancelar a caixa “Salvar como…” retornava sucesso lógico e podia permitir o fechamento com perda do conteúdo em memória. | Os fluxos de salvamento distinguem sucesso (`Ok(true)`) de cancelamento (`Ok(false)`), e as confirmações preservam a operação quando o usuário cancela. |
+| Identidade das abas | O ID do editor era baseado no índice da aba. Ao fechar uma aba anterior, as abas seguintes mudavam de índice e podiam perder ou herdar cursor e seleção de outra aba. | Cada aba recebeu um ID estável durante sua vida; o identificador do `TextEdit` não depende mais da posição no vetor. |
+| Atalhos em campos auxiliares | Ctrl+Z, Ctrl+Y, Ctrl+X, Ctrl+C, Ctrl+V e Ctrl+A eram processados pelo documento mesmo quando o foco estava no campo de localizar/substituir, impedindo a edição nativa do campo e podendo alterar o documento errado. | Esses atalhos agora são tratados pelo documento somente quando o editor principal está focado; os comandos de arquivo, busca e zoom continuam globais. |
+| Localizar anterior e substituir | Com uma ocorrência selecionada, a busca anterior podia incluir a própria ocorrência selecionada e repeti-la. A substituição única podia ignorar a seleção e substituir a próxima ocorrência. | A integração usa o início da seleção como ponto de busca reversa e reconhece uma seleção que corresponde à consulta antes de substituir. A posição do cursor é mantida após a substituição. |
+
+A validação posterior às correções passou com 11 testes unitários, 8 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, build release Linux, build release PE32+ x86-64 para Windows, scans estáticos, `git diff --check` e smoke test headless sob Xvfb. O `cargo audit` continua registrando apenas os avisos de manutenção transitiva já conhecidos para `paste 1.0.15` e `ttf-parser 0.25.1`.
+
+Permanecem riscos que não puderam ser reproduzidos integralmente neste ambiente. O limite de 128 MB protege o tamanho do arquivo, mas a leitura, normalização e o histórico podem gerar cópias temporárias adicionais; arquivos próximos do limite podem consumir centenas de megabytes durante a abertura ou salvamento. Também continuam sem cobertura automatizada completa os diálogos nativos, clipboard, drag and drop, múltiplos monitores/DPI, acessibilidade e execução visual no Windows 10/11 real. Esses pontos devem ser validados manualmente antes de uma distribuição ampla; não foram tratados como falhas confirmadas nesta rodada.
