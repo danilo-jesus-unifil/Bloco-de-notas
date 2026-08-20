@@ -147,3 +147,11 @@ A nova revisão revalidou os requisitos, os fluxos funcionais, a arquitetura, a 
 Depois dessa correção, passaram novamente 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, builds release Linux e Windows PE32+ x86-64, scans estáticos, `git diff --check`, smoke test headless e interação headless com identificação da janela e atalhos básicos. Não foram encontrados novos problemas de código, segurança, desempenho, interface ou compatibilidade.
 
 O achado permaneceu exclusivamente documental e não alterou o comportamento do aplicativo. Não foi criado novo release; o v0.2.4 continua sendo a versão funcional correta.
+
+## Auditoria do pasted_content_11.txt
+
+A auditoria completa revalidou novamente todos os requisitos anteriores, os fluxos de abrir, editar, localizar, substituir, salvar, desfazer, refazer, clipboard, abas, drag and drop, configurações, persistência e fechamento, além da organização modular, UX, segurança, desempenho, compatibilidade Windows e documentação. Não foram encontrados novos problemas reais nem implementações fake ou placeholders funcionais.
+
+A validação passou com 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, builds release Linux e Windows PE32+ x86-64, scans de placeholders e `unsafe`, `git diff --check`, smoke test headless e interação headless com identificação da janela e atalhos básicos. O único `unsafe` continua isolado no helper Windows de substituição atômica; os avisos transitivos de manutenção para `paste` e `ttf-parser` permanecem documentados.
+
+A única limitação material continua sendo a validação visual e funcional em Windows 10/11 real, especialmente diálogos nativos, clipboard, drag and drop, DPI, múltiplos monitores e acessibilidade. Como não houve alteração de código ou comportamento, não foi criado novo release; o v0.2.4 permanece correto.
