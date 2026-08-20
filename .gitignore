@@ -1,0 +1,9 @@
+/target/
+/dist/
+/.idea/
+/.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+/README-WINDOWS.txt
