@@ -62,3 +62,7 @@ A auditoria foi executada novamente sobre o mesmo baseline publicado e reproduzi
 ## Quarta execução da auditoria
 
 A quarta execução repetiu a análise funcional, os scans de segurança e placeholders, a revisão arquitetural, a análise de dependências, os testes de regressão, o build otimizado, o check Windows e a inicialização headless. Os resultados permaneceram consistentes e nenhuma falha nova justificou uma alteração de código ou um novo release.
+
+## Quinta execução da auditoria
+
+A quinta execução reproduziu novamente os testes, Clippy, advisory scan, build Linux release, check Windows, scans estáticos e smoke test headless. Não foram observados problemas novos de funcionamento, segurança, desempenho, arquitetura ou compatibilidade. O release v0.2.1 continua sendo o baseline correto.
