@@ -74,3 +74,7 @@ A sexta execução repetiu o ciclo completo de qualidade, incluindo testes unit�
 ## Sétima execução da auditoria
 
 A sétima execução repetiu o mesmo ciclo completo, com 10 testes unitários, 7 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, build Linux release, check Windows, scans estáticos e smoke test headless aprovados. Nenhum novo problema de funcionamento, segurança, desempenho, arquitetura ou compatibilidade foi encontrado.
+
+## Oitava execução da auditoria
+
+A oitava execução repetiu novamente o ciclo de verificação completo. Os testes unitários e de integração, Clippy, advisory scan, build Linux release, check Windows, scans estáticos, `git diff --check` e smoke test headless passaram sem alterações de comportamento. O baseline v0.2.1 permanece estável e nenhum novo release é justificável.
