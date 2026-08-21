@@ -1,6 +1,6 @@
 [package]
 name = "bloco-de-notas"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
 description = "Um bloco de notas simples, rápido e escuro para Windows 10."
 license = "MIT"
@@ -17,7 +17,7 @@ serde = { version = "1.0", features = ["derive"] }
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.52", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }
 
-[target.'cfg(windows)'.build-dependencies]
+[build-dependencies]
 winres = "0.1.12"
 
 [profile.release]

@@ -4,7 +4,7 @@ Um bloco de notas simples, rápido e predominantemente escuro, escrito em Rust c
 
 ## Escopo entregue
 
-A versão `0.2.4` mantém a experiência visual mais próxima do Bloco de Notas do Windows 11 sem abandonar a compatibilidade com Windows 10. A janela possui cabeçalho compacto com ícone, abas locais, botão de nova aba, menus familiares, painel de configurações mínimo, status bar detalhada e drag and drop de arquivos de texto.
+A versão `0.2.5` mantém a experiência visual mais próxima do Bloco de Notas do Windows 11 sem abandonar a compatibilidade com Windows 10. A janela possui cabeçalho compacto com ícone, abas locais, botão de nova aba, menus familiares, painel de configurações mínimo, status bar detalhada e drag and drop de arquivos de texto.
 
 O aplicativo inclui edição Unicode, quebra automática de linha, zoom por tamanho da fonte, novo documento, abrir, salvar, salvar como, confirmação para alterações não salvas, desfazer, refazer, copiar, recortar, colar, selecionar tudo, localizar, localizar anterior/próximo, substituir e substituição em massa. Os atalhos principais incluem `Ctrl+N`, `Ctrl+O`, `Ctrl+S`, `Ctrl+Shift+S`, `Ctrl+W`, `Ctrl+Z`, `Ctrl+Y`, `Ctrl+X`, `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+F`, `Ctrl+H`, `Ctrl++`, `Ctrl+-` e `Ctrl+0`.
 
@@ -69,7 +69,7 @@ CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-gcc \
 
 O executável cross-compiled fica em `target/x86_64-pc-windows-gnu/release/bloco-de-notas.exe`. Em um ambiente Windows com o toolchain MSVC, o comando usual é `cargo build --release`, produzindo o arquivo em `target/release/bloco-de-notas.exe`.
 
-O `build.rs` usa `winres` somente em builds Windows para incorporar o manifesto DPI-aware e o ícone multi-resolução. A aplicação não depende de arquivos presentes na máquina de desenvolvimento para iniciar.
+O `build.rs` usa `winres` quando o alvo é Windows, inclusive em cross-builds GNU a partir de Linux, para incorporar o manifesto DPI-aware e o ícone multi-resolução. A aplicação não depende de arquivos presentes na máquina de desenvolvimento para iniciar.
 
 ## Distribuição
 

@@ -1,5 +1,17 @@
 # Histórico de mudanças
 
+## [0.2.5] — 2026-08-21
+
+### Corrigido
+
+- O cross-build Windows agora executa o `winres` para o alvo Windows, mesmo quando o build roda em Linux.
+- O objeto de recursos é ligado diretamente ao executável GNU, evitando que o linker descarte o manifesto e o ícone por falta de símbolos referenciados.
+- O executável distribuído agora contém o manifesto DPI-aware, a versão Windows e o ícone multi-resolução.
+
+### Verificações
+
+Foram executados os testes, Clippy, advisory scan, build release Linux, cross-build Windows, inspeção dos recursos PE e execução controlada sob Wine.
+
 ## [0.2.4] — 2026-08-20
 
 ### Corrigido

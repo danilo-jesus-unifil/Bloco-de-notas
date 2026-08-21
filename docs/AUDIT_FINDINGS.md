@@ -53,3 +53,13 @@ Arquivos próximos do limite de 128 MB podem exigir memória adicional durante n
 ## Decisão de escopo
 
 O projeto continua deliberadamente pequeno. Nova janela, recuperação de abas fechadas, múltiplos painéis, editor rico, temas claro e do sistema, família tipográfica configurável, instalador, plugins, árvore de arquivos e sincronização permanecem fora do escopo atual.
+
+## v0.2.5: recursos Windows no cross-build
+
+A execução em Windows real revelou que o executável distribuído não iniciava para o usuário e também não apresentava o ícone esperado. A inspeção do PE v0.2.4 mostrou que a entrada `Resource Directory` estava vazia: não havia seção `.rsrc`, embora o projeto tivesse manifesto e arquivo ICO no código-fonte.
+
+A causa foi o uso de `#[cfg(windows)]` no `build.rs`. Em um cross-build iniciado no Linux, essa condição descrevia o host e impedia a execução do `winres` para o target Windows. Depois que a condição foi corrigida, o objeto de recursos ainda precisava ser ligado diretamente ao executável GNU, porque a biblioteca estática sem símbolos referenciados podia ser descartada pelo linker.
+
+O v0.2.5 detecta o target por `TARGET`, configura as ferramentas MinGW corretas e liga diretamente `resource.o`. A inspeção do novo PE confirmou a seção `.rsrc`, sete imagens de ícone, grupo de ícone, versão Windows e manifesto DPI-aware. O executável e o candidato anterior permaneceram ativos sob Wine até o timeout controlado; a validação final em Windows 10/11 real continua necessária.
+
+A validação passou com 12 testes unitários, 10 casos de integração, Clippy sem warnings, advisory scan sem vulnerabilidades, builds Linux e Windows, inspeção de recursos PE e `git diff --check`. Permanecem os avisos transitivos de manutenção para `paste` e `ttf-parser`.
